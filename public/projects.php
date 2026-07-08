@@ -49,7 +49,7 @@ $result = $conn->query($query);
     <div class="custom-sidebar d-flex flex-column justify-content-between pb-3">
         <div>
             <div class="p-4 d-flex align-items-center gap-2">
-                <i class="fa-solid fa-screwdriver-wrench fs-4" style="color: var(--pms-electric-blue);"></i>
+                <i class="fa-solid fa-layer-group fs-4" style="color: #2563eb;"></i>
                 <span class="fs-5 fw-bold text-white">ProjectMS</span>
             </div>
             <hr class="mx-3 my-0" style="border-color: rgba(255,255,255,0.15);">
@@ -58,6 +58,9 @@ $result = $conn->query($query);
                 <li><a href="manage_users.php" class="nav-link"><i class="fa-solid fa-users-gear"></i> Manage Users</a></li>
                 <li><a href="projects.php" class="nav-link active-accent"><i class="fa-solid fa-sitemap"></i> Matrix Flow</a></li>
                 <li><a href="documents.php" class="nav-link"><i class="fa-solid fa-folder-tree"></i> Documents</a></li>
+                <li><a href="admin_budget.php" class="nav-link"><i class="fa-solid fa-code text-info"></i> Dev Budget</a></li>
+                <li><a href="crew_budget_control.php" class="nav-link"><i class="fa-solid fa-helmet-safety text-warning"></i> Crew Budget</a></li>
+                <li><a href="sponsors.php" class="nav-link"><i class="fa-solid fa-hand-holding-dollar text-success"></i> Sponsors</a></li>
             </ul>
         </div>
         <div>
@@ -70,7 +73,7 @@ $result = $conn->query($query);
 
     <div class="main-content">
         <header class="top-navbar">
-            <h5 class="mb-0 text-secondary fw-semibold">Operational Assignments Matrix Flow</h5>
+            <h5 class="mb-0 text-secondary fw-semibold">Task Assignments</h5>
             <span class="text-muted small">Authority: <strong class="text-danger"><?= htmlspecialchars($user_role); ?></strong></span>
         </header>
 

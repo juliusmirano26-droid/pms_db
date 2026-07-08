@@ -223,7 +223,6 @@ $renderer = new DeveloperDashboardRenderer($user_name, $user_role, $current_page
                 </div>
             </div>
 
-            <!-- In-update ang grid mula col-lg-8 patungong col-lg-12[cite: 7] -->
             <div class="row g-4">
                 <div class="col-12 col-lg-12">
                     <div class="card border shadow-sm mb-4" style="border-radius: 12px; background: white;">
@@ -305,5 +304,14 @@ $renderer = new DeveloperDashboardRenderer($user_name, $user_role, $current_page
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- REAL-TIME HEARTBEAT SCRIPT: Nagpapadala ng tahimik na request tuwing 30 segundo para i-update ang last_active habang naka-open ang tab -->
+    <script>
+        setInterval(function() {
+            fetch(window.location.href)
+                .then(response => console.log('Status active pinged successfully.'))
+                .catch(error => console.error('Ping failed:', error));
+        }, 30000); // 30000 milliseconds = 30 seconds
+    </script>
 </body>
 </html>

@@ -95,14 +95,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 $devs_res = $conn->query("SELECT id, name FROM users WHERE role = 'Team Member' ORDER BY name ASC");
 
 // --- DYNAMIC DATA VISIBILITY ---
+// MODIFIED: Added a.file_path to select state tracking
 if (in_array($user_role, ['Admin', 'Project Manager'])) {
-    $query = "SELECT a.id, a.task_name, a.deadline, a.priority, u.name as developer_name 
+    $query = "SELECT a.id, a.task_name, a.deadline, a.priority, a.file_path, u.name as developer_name 
               FROM assignments a 
               LEFT JOIN users u ON a.developer_id = u.id 
               ORDER BY a.id DESC";
     $stmt = $conn->prepare($query);
 } else {
-    $query = "SELECT a.id, a.task_name, a.deadline, a.priority, u.name as developer_name 
+    $query = "SELECT a.id, a.task_name, a.deadline, a.priority, a.file_path, u.name as developer_name 
               FROM assignments a 
               LEFT JOIN users u ON a.developer_id = u.id 
               WHERE a.developer_id = ? 
@@ -265,21 +266,27 @@ $result = $stmt->get_result();
                                                     <?= htmlspecialchars($row['priority']); ?>
                                                 </span>
                                             </td>
-                                            <td>
-                                                <form class="upload-task-form" enctype="multipart/form-data" style="display: flex; gap: 6px; justify-content: center; align-items: center;">
-                                                    <input type="hidden" name="task_id" value="<?= $row['id']; ?>">
-                                                    
-                                                    <label class="btn btn-sm btn-outline-secondary mb-0 py-1" style="cursor: pointer; font-size: 0.75rem;">
-                                                        <i class="fa-solid fa-paperclip"></i> Select
-                                                        <input type="file" name="task_file" class="task-file-input" style="display: none;" onchange="updateFileName(this)">
-                                                    </label>
-                                                    
-                                                    <span class="file-name-text text-muted small px-1" style="max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.75rem;"></span>
+                                            <td class="text-center">
+                                                <?php if (!empty($row['file_path'])): ?>
+                                                    <span class="badge bg-success py-2 px-3 rounded-pill" style="font-size: 0.75rem;">
+                                                        <i class="fa-solid fa-circle-check me-1"></i> Submitted
+                                                    </span>
+                                                <?php else: ?>
+                                                    <form class="upload-task-form" enctype="multipart/form-data" style="display: flex; gap: 6px; justify-content: center; align-items: center;">
+                                                        <input type="hidden" name="task_id" value="<?= $row['id']; ?>">
+                                                        
+                                                        <label class="btn btn-sm btn-outline-secondary mb-0 py-1" style="cursor: pointer; font-size: 0.75rem;">
+                                                            <i class="fa-solid fa-paperclip"></i> Select
+                                                            <input type="file" name="task_file" class="task-file-input" style="display: none;" onchange="updateFileName(this)">
+                                                        </label>
+                                                        
+                                                        <span class="file-name-text text-muted small px-1" style="max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.75rem;"></span>
 
-                                                    <button type="submit" class="btn btn-sm btn-primary upload-submit-btn py-1" style="font-size: 0.75rem;" disabled>
-                                                        <i class="fa-solid fa-arrow-up-from-bracket"></i> Upload
-                                                    </button>
-                                                </form>
+                                                        <button type="submit" class="btn btn-sm btn-primary upload-submit-btn py-1" style="font-size: 0.75rem;" disabled>
+                                                            <i class="fa-solid fa-arrow-up-from-bracket"></i> Upload
+                                                        </button>
+                                                    </form>
+                                                <?php endif; ?>
                                             </td>
                                         </tr>
                                     <?php endwhile; ?>

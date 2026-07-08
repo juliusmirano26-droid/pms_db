@@ -30,7 +30,7 @@ if ($table_users_check && $table_users_check->num_rows > 0) {
     }
 }
 
-// 2. Total Global Projects Managed (Updated to target 'assignments' table)
+// 2. Total Global Projects Managed
 $table_name = "assignments"; 
 $total_projects = 0;
 $project_res = $conn->query("SELECT COUNT(*) as total_projects FROM $table_name");
@@ -46,29 +46,21 @@ $completed_projects = $c_res ? $c_res->num_rows : 0;
 $d_res = $conn->query("SELECT id FROM documents");
 $total_docs = $d_res ? $d_res->num_rows : 0;
 
-// 3. CORRECTED FINANCIAL METRICS AGGREGATION (Budget - Labor Cost - Material Cost)
+// 3. FINANCIAL METRICS AGGREGATION
 $grand_allocated_budget = 0.00;
 $grand_labor_cost = 0.00;
 $grand_material_cost = 0.00;
 $grand_net_profit = 0.00;
 
-// FIXED: Kinuha ang sum ng allocated_budget mula sa sponsors table sa pamamagitan ng pag-JOIN sa project_sponsors_map
-$table_map_check = $conn->query("SHOW TABLES LIKE 'project_sponsors_map'");
-$table_sponsors_check = $conn->query("SHOW TABLES LIKE 'sponsors'");
-
-if ($table_map_check && $table_map_check->num_rows > 0 && $table_sponsors_check && $table_sponsors_check->num_rows > 0) {
-    $budget_query = "SELECT SUM(IFNULL(s.allocated_budget, 0.00)) as total_budget 
-                     FROM project_sponsors_map psm
-                     JOIN sponsors s ON psm.sponsor_name = s.sponsor_name";
-    $budget_res = $conn->query($budget_query);
+$table_crew_check = $conn->query("SHOW TABLES LIKE 'onsite_personnel'");
+if ($table_crew_check && $table_crew_check->num_rows > 0) {
+    // 1. Total Operations Budget pooled directly from saved project rows
+    $budget_res = $conn->query("SELECT SUM(IFNULL(project_budget, 0.00)) as total_budget FROM crew_project_details");
     if ($budget_res && $b_row = $budget_res->fetch_assoc()) {
         $grand_allocated_budget = floatval($b_row['total_budget'] ?? 0.00);
     }
-}
 
-$table_crew_check = $conn->query("SHOW TABLES LIKE 'onsite_personnel'");
-if ($table_crew_check && $table_crew_check->num_rows > 0) {
-    // 2. Kabuuang Labor Cost (Daily Rate ng active staff * Duration sa Days ng project nila)
+    // 2. Total Active Labor Costs
     $labor_query = "SELECT SUM(op.daily_rate * (CAST(REGEXP_REPLACE(IFNULL(cpd.project_duration, '0'), '[^0-9]', '') AS UNSIGNED) * 26)) as total_labor
                     FROM onsite_personnel op
                     JOIN crew_project_details cpd ON op.assigned_project = cpd.project_name
@@ -77,18 +69,18 @@ if ($table_crew_check && $table_crew_check->num_rows > 0) {
     if ($labor_res && $l_row = $labor_res->fetch_assoc()) {
         $grand_labor_cost = floatval($l_row['total_labor'] ?? 0.00);
     }
-}
 
-// 3. Kabuuang Material Costs mula sa material_costs table
-$table_mat_check = $conn->query("SHOW TABLES LIKE 'material_costs'");
-if ($table_mat_check && $table_mat_check->num_rows > 0) {
-    $mat_res = $conn->query("SELECT SUM(quantity * unit_cost) as total_mat FROM material_costs");
-    if ($mat_res && $m_row = $mat_res->fetch_assoc()) {
-        $grand_material_cost = floatval($m_row['total_mat'] ?? 0.00);
+    // 3. Total Material Costs
+    $table_mat_check = $conn->query("SHOW TABLES LIKE 'material_costs'");
+    if ($table_mat_check && $table_mat_check->num_rows > 0) {
+        $mat_res = $conn->query("SELECT SUM(quantity * unit_cost) as total_mat FROM material_costs");
+        if ($mat_res && $m_row = $mat_res->fetch_assoc()) {
+            $grand_material_cost = floatval($m_row['total_mat'] ?? 0.00);
+        }
     }
 }
 
-// ANG TUNAY NA KINITA: Budget minus Labor Cost minus Material Cost
+// FIX: Pure float subtraction using our dedicated metric numeric variables instead of using table columns directly
 $grand_net_profit = $grand_allocated_budget - $grand_labor_cost - $grand_material_cost;
 
 // 4. User Demographics Breakdown
@@ -104,7 +96,7 @@ if ($table_users_check && $table_users_check->num_rows > 0) {
     }
 }
 
-// ================= OPERATIONAL SERVER OPERATIVE METRICS =================
+// ================= OPERATIONAL SERVER METRICS =================
 $disk_free = @disk_free_space(".");
 $disk_total = @disk_total_space(".");
 $disk_used = $disk_total - $disk_free;
@@ -139,7 +131,6 @@ $db_status = ($conn->ping()) ? "Operational" : "Degraded State";
         .custom-sidebar .nav-link { color: #94a3b8 !important; padding: 12px 20px; border-radius: 8px; margin: 4px 12px; display: flex; align-items: center; gap: 12px; text-decoration: none; transition: all 0.2s; }
         .custom-sidebar .nav-link:hover { color: #ffffff !important; background-color: rgba(255, 255, 255, 0.05) !important; }
         .custom-sidebar .nav-link.active-accent { color: #ffffff !important; background-color: var(--pms-electric-blue) !important; }
-        .card-link { text-decoration: none; color: inherit; display: block; }
     </style>
 </head>
 <body>
@@ -152,48 +143,18 @@ $db_status = ($conn->ping()) ? "Operational" : "Degraded State";
             </div>
             <hr class="mx-3 my-0" style="border-color: rgba(255,255,255,0.15);">
             <ul class="nav nav-pills flex-column mt-3">
-                <li class="nav-item">
-                    <a href="admin_dashboard.php" class="nav-link active-accent">
-                        <i class="fa-solid fa-chart-pie"></i> Dashboard
-                    </a>
-                </li>
-                <li>
-                    <a href="manage_users.php" class="nav-link">
-                        <i class="fa-solid fa-users-gear"></i> Manage Users
-                    </a>
-                </li>
-                <li>
-                    <a href="projects.php" class="nav-link">
-                        <i class="fa-solid fa-sitemap"></i> Matrix Flow
-                    </a>
-                </li>
-                <li>
-                    <a href="documents.php" class="nav-link">
-                        <i class="fa-solid fa-folder-tree"></i> Documents
-                    </a>
-                </li>
-                <li>
-                    <a href="admin_budget.php" class="nav-link">
-                       <i class="fa-solid fa-code text-info"></i> Dev Budget
-                     </a>
-                </li>
-                <li>
-                    <a href="crew_budget_control.php" class="nav-link">
-                       <i class="fa-solid fa-helmet-safety text-warning"></i> Crew Budget
-                     </a>
-                </li>
-                <li>
-                     <a href="sponsors.php" class="nav-link">
-                       <i class="fa-solid fa-hand-holding-dollar text-success"></i> Sponsors
-                     </a>
-                </li>
+                <li class="nav-item"><a href="admin_dashboard.php" class="nav-link active-accent"><i class="fa-solid fa-chart-pie"></i> Dashboard</a></li>
+                <li><a href="manage_users.php" class="nav-link"><i class="fa-solid fa-users-gear"></i> Manage Users</a></li>
+                <li><a href="projects.php" class="nav-link"><i class="fa-solid fa-sitemap"></i> Matrix Flow</a></li>
+                <li><a href="documents.php" class="nav-link"><i class="fa-solid fa-folder-tree"></i> Documents</a></li>
+                <li><a href="admin_budget.php" class="nav-link"><i class="fa-solid fa-code text-info"></i> Dev Budget</a></li>
+                <li><a href="crew_budget_control.php" class="nav-link"><i class="fa-solid fa-helmet-safety text-warning"></i> Crew Budget</a></li>
+                <li><a href="sponsors.php" class="nav-link"><i class="fa-solid fa-hand-holding-dollar text-success"></i> Sponsors</a></li>
             </ul>
         </div>
         <div>
             <hr class="mx-3" style="border-color: rgba(255,255,255,0.15);">
-            <a href="logout.php" class="nav-link text-danger m-3 p-0 d-flex align-items-center gap-2" style="text-decoration: none;">
-                <i class="fa-solid fa-right-from-bracket"></i> Logout
-            </a>
+            <a href="logout.php" class="nav-link text-danger m-3 p-0 d-flex align-items-center gap-2" style="text-decoration: none;"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
         </div>
     </div>
 
@@ -325,7 +286,7 @@ $db_status = ($conn->ping()) ? "Operational" : "Degraded State";
             options: { plugins: { legend: { display: false } } }
         });
 
-        // Professional Profit Donut Chart (With Materials Data Metric Included)
+        // Professional Profit Donut Chart
         const profitCtx = document.getElementById('profitDonutChart').getContext('2d');
         new Chart(profitCtx, {
             type: 'doughnut',

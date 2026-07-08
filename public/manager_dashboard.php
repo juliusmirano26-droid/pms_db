@@ -34,7 +34,7 @@ $assignments_count_query = "SELECT COUNT(*) as total_assignments FROM assignment
 $assignments_res = $conn->query($assignments_count_query);
 $total_assignments = ($assignments_res) ? $assignments_res->fetch_assoc()['total_assignments'] : 0;
 
-// 2. Bilang ng Lahat ng Dokumento (Graceful fallback kung wala pang documents table)
+// 2. Bilang ng Lahat ng Dokumento
 $doc_count_query = "SELECT COUNT(*) as total_docs FROM documents";
 $doc_res = $conn->query($doc_count_query);
 $total_docs = ($doc_res) ? $doc_res->fetch_assoc()['total_docs'] : 0;
@@ -44,13 +44,33 @@ $team_count_query = "SELECT COUNT(*) as total_team FROM users WHERE role = 'Team
 $team_res = $conn->query($team_count_query);
 $total_team = ($team_res) ? $team_res->fetch_assoc()['total_team'] : 0;
 
-// 4. Kuhanin ang listahan ng mga Team Members at kanilang Status
-$team_list_query = "SELECT name, username, email, is_online FROM users WHERE role = 'Team Member' ORDER BY is_online DESC, name ASC LIMIT 5";
+// 4. Kuhanin ang listahan ng mga Developers (Team Members) lamang
+$team_list_query = "SELECT name, username, email, 
+                    CASE 
+                        WHEN is_online = 1 AND last_active >= NOW() - INTERVAL 1 MINUTE THEN 1 
+                        ELSE 0 
+                    END as computed_online 
+                    FROM users 
+                    WHERE role = 'Team Member' 
+                    ORDER BY computed_online DESC, name ASC LIMIT 5";
 $team_list_result = $conn->query($team_list_query);
 
-// 5. Kuhanin ang mga Submissions (Para sa bagong section)
+// 5. Kuhanin ang mga Submissions
 $submission_query = "SELECT a.id, a.task_name, u.name as dev_name, a.status FROM assignments a JOIN users u ON a.developer_id = u.id WHERE a.file_path IS NOT NULL LIMIT 5";
 $submission_result = $conn->query($submission_query);
+
+// 6. UPDATE: Kumuha ng Onsite Personnel at isinama na rin ang status sa select query
+$personnel_count = 0;
+$personnel_result = false;
+$table_crew_check = $conn->query("SHOW TABLES LIKE 'onsite_personnel'");
+if ($table_crew_check && $table_crew_check->num_rows > 0) {
+    $p_count_res = $conn->query("SELECT COUNT(*) as total FROM onsite_personnel WHERE LOWER(status) = 'active'");
+    $personnel_count = $p_count_res ? $p_count_res->fetch_assoc()['total'] : 0;
+    
+    // Kasama na ang `status` sa SELECT statement para magamit sa table elements below
+    $personnel_query = "SELECT name, contact_no, role, assigned_project, status FROM onsite_personnel WHERE LOWER(status) = 'active' ORDER BY name ASC LIMIT 5";
+    $personnel_result = $conn->query($personnel_query);
+}
 ?>
 
 <!DOCTYPE html>
@@ -76,43 +96,58 @@ $submission_result = $conn->query($submission_query);
 </head>
 <body>
 
-    <div class="custom-sidebar d-flex flex-column justify-content-between pb-3">
-        <div>
-            <div class="p-4 d-flex align-items-center gap-2">
-                <i class="fa-solid fa-layer-group fs-4" style="color: var(--pms-electric-blue);"></i>
-                <span class="fs-5 fw-bold text-white">ProjectMS</span>
-            </div>
-            <hr class="mx-3 my-0" style="border-color: rgba(255,255,255,0.15);">
-            <ul class="nav nav-pills flex-column mt-3">
-                <li class="nav-item">
-                    <a href="manager_dashboard.php" class="nav-link active-accent">
-                        <i class="fa-solid fa-gauge-high"></i> Dashboard
-                    </a>
-                </li>
-                <li>
-                    <a href="vault_documents.php" class="nav-link">
-                        <i class="fa-solid fa-file-shield"></i> Vault Documents
-                    </a>
-                </li>
-                <li>
-                    <a href="assignments.php" class="nav-link">
-                        <i class="fa-solid fa-list-check"></i> Assignments
-                    </a>
-                </li>
-                <li>
-                    <a href="uploaded_submissions.php" class="nav-link">
-                        <i class="fa-solid fa-arrow-up-right-from-square"></i> Developer Submissions
-                    </a>
-                </li>
-            </ul>
+<div class="custom-sidebar d-flex flex-column justify-content-between pb-3">
+    <div>
+        <div class="p-4 d-flex align-items-center gap-2">
+            <i class="fa-solid fa-layer-group fs-4" style="color: #2563eb;"></i>
+            <span class="fs-5 fw-bold text-white">ProjectMS</span>
         </div>
-        <div>
-            <hr class="mx-3" style="border-color: rgba(255,255,255,0.15);">
-            <a href="logout.php" class="nav-link text-danger m-3 p-0 d-flex align-items-center gap-2" style="text-decoration: none;">
-                <i class="fa-solid fa-right-from-bracket"></i> Logout
-            </a>
-        </div>
+        <hr class="mx-3 my-0" style="border-color: rgba(255,255,255,0.15);">
+        <ul class="nav nav-pills flex-column mt-3">
+            <li class="nav-item">
+                <a href="manager_dashboard.php" class="nav-link <?= $current_page == 'manager_dashboard.php' ? 'active-accent' : ''; ?>">
+                    <i class="fa-solid fa-chart-pie"></i> Dashboard
+                </a>
+            </li>
+            <li>
+                <a href="work_personnel.php" class="nav-link <?= $current_page == 'work_personnel.php' ? 'active-accent' : ''; ?>">
+                    <i class="fa-solid fa-person-digging"></i> Work Personnel
+                </a>
+            </li>
+            <li>
+                <a href="site_development.php" class="nav-link">
+                    <i class="fa-solid fa-trowel-bricks"></i> Site Development
+                </a>
+            </li>
+            <li>
+                <a href="vault_documents.php" class="nav-link <?= $current_page == 'vault_documents.php' ? 'active-accent' : ''; ?>">
+                    <i class="fa-solid fa-folder-tree"></i> Vault Documents
+                </a>
+            </li>
+            <li>
+                <a href="assignments.php" class="nav-link <?= $current_page == 'assignments.php' ? 'active-accent' : ''; ?>">
+                    <i class="fa-solid fa-sitemap"></i> Assignments
+                </a>
+            </li>
+            <li>
+                <a href="developer_submissions.php" class="nav-link <?= $current_page == 'developer_submissions.php' ? 'active-accent' : ''; ?>">
+                    <i class="fa-solid fa-file-import"></i> Developer Submissions
+                </a>
+            </li>
+            <li>
+                <a href="manager_expenses.php" class="nav-link <?= $current_page == 'project_expenses.php' ? 'active-accent' : ''; ?>">
+                    <i class="fa-solid fa-receipt"></i> Project Expenses
+                </a>
+            </li>
+        </ul>
     </div>
+    <div>
+        <hr class="mx-3" style="border-color: rgba(255,255,255,0.15);">
+        <a href="logout.php" class="nav-link text-danger m-3 p-0 d-flex align-items-center gap-2" style="text-decoration: none;">
+            <i class="fa-solid fa-right-from-bracket"></i> Logout
+        </a>
+    </div>
+</div>
 
     <div class="main-content">
         <header class="top-navbar">
@@ -173,12 +208,11 @@ $submission_result = $conn->query($submission_query);
                 </div>
             </div>
 
-            <div class="row g-4">
-                <!-- Team Directory -->
+            <div class="row g-4 mb-4">
                 <div class="col-12 col-lg-6">
                     <div class="card border shadow-sm h-100" style="border-radius: 12px; background: white;">
                         <div class="card-header bg-transparent border-bottom p-4">
-                            <h5 class="fw-bold text-dark mb-0"><i class="fa-solid fa-address-book text-primary me-2"></i>Assigned Team Directory</h5>
+                            <h5 class="fw-bold text-dark mb-0"><i class="fa-solid fa-laptop-code text-primary me-2"></i>Developer System Directory</h5>
                         </div>
                         <div class="card-body p-0">
                             <div class="table-responsive">
@@ -197,14 +231,16 @@ $submission_result = $conn->query($submission_query);
                                                 <tr>
                                                     <td class="ps-4 fw-semibold text-dark"><?= htmlspecialchars($team['name']); ?></td>
                                                     <td>
-                                                        <span class="badge <?= $team['is_online'] ? 'bg-success' : 'bg-secondary' ?>">
-                                                            <?= $team['is_online'] ? 'Online' : 'Offline' ?>
+                                                        <span class="badge <?= $team['computed_online'] ? 'bg-success' : 'bg-secondary' ?>">
+                                                            <?= $team['computed_online'] ? 'Online' : 'Offline' ?>
                                                         </span>
                                                     </td>
                                                     <td><span class="badge bg-secondary-subtle text-secondary font-monospace"><?= htmlspecialchars($team['username']); ?></span></td>
                                                     <td class="text-muted"><?= htmlspecialchars($team['email'] ?? 'No Email Set'); ?></td>
                                                 </tr>
                                             <?php endwhile; ?>
+                                        <?php else: ?>
+                                            <tr><td colspan="4" class="text-center p-3 text-muted">No developer profiles mapped.</td></tr>
                                         <?php endif; ?>
                                     </tbody>
                                 </table>
@@ -213,7 +249,6 @@ $submission_result = $conn->query($submission_query);
                     </div>
                 </div>
 
-                <!-- Developer Submissions Section -->
                 <div class="col-12 col-lg-6">
                     <div class="card border shadow-sm h-100" style="border-radius: 12px; background: white;">
                         <div class="card-header bg-transparent border-bottom p-4">
@@ -233,7 +268,7 @@ $submission_result = $conn->query($submission_query);
                                         <?php if ($submission_result && $submission_result->num_rows > 0): ?>
                                             <?php while ($sub = $submission_result->fetch_assoc()): ?>
                                                 <tr>
-                                                    <td class="ps-4 text-dark"><?= htmlspecialchars($sub['task_name']); ?></td>
+                                                    <td class="ps-4 text-dark py-3"><?= htmlspecialchars($sub['task_name']); ?></td>
                                                     <td><?= htmlspecialchars($sub['dev_name']); ?></td>
                                                     <td><span class="badge bg-primary-subtle text-primary"><?= htmlspecialchars($sub['status']); ?></span></td>
                                                 </tr>
@@ -248,6 +283,61 @@ $submission_result = $conn->query($submission_query);
                     </div>
                 </div>
             </div>
+
+            <div class="row g-4">
+                <div class="col-12">
+                    <div class="card border shadow-sm" style="border-radius: 12px; background: white;">
+                        <div class="card-header bg-transparent border-bottom p-4 d-flex justify-content-between align-items-center">
+                            <h5 class="fw-bold text-dark mb-0">
+                                <i class="fa-solid fa-users text-warning me-2"></i>Active Work Personnel Directory (Field Crew)
+                            </h5>
+                            <span class="badge bg-warning text-dark border border-warning-subtle fw-bold rounded-pill"><?= $personnel_count; ?> Deployed Personnel</span>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th class="ps-4 py-3">Full Name / Specialty</th>
+                                            <th class="py-3">Status</th>
+                                            <th class="py-3">Contact No.</th>
+                                            <th class="py-3 text-end pe-4">Current Project Assignment</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php if ($personnel_result && $personnel_result->num_rows > 0): ?>
+                                            <?php while ($worker = $personnel_result->fetch_assoc()): ?>
+                                                <tr class="border-bottom">
+                                                    <td class="ps-4 py-3">
+                                                        <div class="fw-bold text-dark"><?= htmlspecialchars($worker['name']); ?></div>
+                                                        <div class="text-muted small" style="font-size: 11px;">
+                                                            <i class="fa-solid fa-id-card-clip me-1 text-muted"></i><?= htmlspecialchars($worker['role'] ?? 'Crew Member'); ?>
+                                                        </div>
+                                                    </td>
+                                                    <td class="py-3">
+                                                        <span class="badge <?= (strcasecmp($worker['status'], 'active') == 0) ? 'bg-success' : 'bg-secondary'; ?>">
+                                                            <?= htmlspecialchars(ucfirst($worker['status'] ?? 'Unknown')); ?>
+                                                        </span>
+                                                    </td>
+                                                    <td class="text-secondary small py-3 fw-semibold"><?= htmlspecialchars($worker['contact_no'] ?? 'No Contact Added'); ?></td>
+                                                    <td class="text-end pe-4 py-3">
+                                                        <span class="badge <?= ($worker['assigned_project'] === 'Bench / No Project' || empty($worker['assigned_project'])) ? 'bg-light text-dark border' : 'bg-primary-subtle text-primary border border-primary-subtle'; ?> rounded-pill px-3 py-1.5 small">
+                                                            <?= htmlspecialchars($worker['assigned_project'] ?: 'General Pool / Unassigned'); ?>
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            <?php endwhile; ?>
+                                        <?php else: ?>
+                                            <tr><td colspan="4" class="text-center p-4 text-muted"><i class="fa-solid fa-circle-info me-1"></i> No active onsite field personnel logs detected in database.</td></tr>
+                                        <?php endif; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </main>
     </div>
 

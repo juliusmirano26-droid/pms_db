@@ -114,9 +114,12 @@ $result = $conn->query($query);
             </div>
             <ul class="nav nav-pills flex-column mt-3">
                 <li class="nav-item"><a href="manager_dashboard.php" class="nav-link"><i class="fa-solid fa-gauge-high"></i> Dashboard</a></li>
-                <li class="nav-item"><a href="vault_documents.php" class="nav-link active-accent"><i class="fa-solid fa-file-shield"></i> Vault Documents</a></li>
-                <li><a href="assignments.php" class="nav-link"><i class="fa-solid fa-list-check"></i> Assignments</a></li>
-                <li><a href="uploaded_submissions.php" class="nav-link"><i class="fa-solid fa-arrow-up-right-from-square"></i> Developer Submissions</a></li>
+                <li class="nav-item"><a href="work_personnel.php" class="nav-link"><i class="fa-solid fa-person-digging"></i> Work Personnel</a></li>
+                <li class="nav-item"><a href="site_development.php" class="nav-link"><i class="fa-solid fa-trowel-bricks"></i> Site Development</a></li>
+                <li class="nav-item"><a href="vault_documents.php" class="nav-link active-accent"><i class="fa-solid fa-folder-tree"></i> Vault Documents</a></li>
+                <li><a href="assignments.php" class="nav-link"><i class="fa-solid fa-sitemap"></i> Assignments</a></li>
+                <li><a href="developer_submissions.php" class="nav-link"><i class="fa-solid fa-file-import"></i> Developer Submissions</a></li>
+                <li><a href="manager_expenses.php" class="nav-link"><i class="fa-solid fa-receipt"></i> Project Expenses</a></li>
             </ul>
         </div>
         <a href="logout.php" class="nav-link text-danger m-3 p-0" style="text-decoration: none;"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
@@ -125,7 +128,7 @@ $result = $conn->query($query);
     <!-- Content (Hindi binago) -->
     <div class="main-content">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="fw-bold text-dark"><i class="fa-solid fa-file-shield text-success me-2"></i>Vault Document Management</h2>
+            <h2 class="fw-bold text-dark"><i class="fa-solid fa-folder-tree text-success me-2"></i>Vault Document Management</h2>
             <button class="btn btn-success rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#uploadDocModal">
                 <i class="fa-solid fa-cloud-arrow-up me-2"></i> Upload Document
             </button>

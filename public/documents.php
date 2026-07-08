@@ -107,7 +107,7 @@ $result = $conn->query($query);
     <div class="custom-sidebar d-flex flex-column justify-content-between pb-3">
         <div>
             <div class="p-4 d-flex align-items-center gap-2">
-                <i class="fa-solid fa-screwdriver-wrench fs-4" style="color: var(--pms-electric-blue);"></i>
+                <i class="fa-solid fa-layer-group fs-4" style="color: #2563eb;"></i>
                 <span class="fs-5 fw-bold text-white">ProjectMS</span>
             </div>
             <hr class="mx-3 my-0" style="border-color: rgba(255,255,255,0.15);">
@@ -116,6 +116,9 @@ $result = $conn->query($query);
                 <li><a href="manage_users.php" class="nav-link"><i class="fa-solid fa-users-gear"></i> Manage Users</a></li>
                 <li><a href="projects.php" class="nav-link"><i class="fa-solid fa-sitemap"></i> Matrix Flow</a></li>
                 <li><a href="documents.php" class="nav-link active-accent"><i class="fa-solid fa-folder-tree"></i> Documents</a></li>
+                <li><a href="admin_budget.php" class="nav-link"><i class="fa-solid fa-code text-info"></i> Dev Budget</a></li>
+                <li><a href="crew_budget_control.php" class="nav-link"><i class="fa-solid fa-helmet-safety text-warning"></i> Crew Budget</a></li>
+                <li><a href="sponsors.php" class="nav-link"><i class="fa-solid fa-hand-holding-dollar text-success"></i> Sponsors</a></li>
             </ul>
         </div>
         <div>
@@ -128,15 +131,15 @@ $result = $conn->query($query);
 
     <div class="main-content">
         <header class="top-navbar">
-            <h5 class="mb-0 text-secondary fw-semibold">Global File Repository</h5>
+            <h5 class="mb-0 text-secondary fw-semibold">Resource Library</h5>
             <span class="text-muted small">Authority: <strong class="text-danger"><?= htmlspecialchars($user_role); ?></strong></span>
         </header>
 
         <main class="p-4 container-fluid">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h3 class="fw-bold text-dark mb-1">Administrative Asset Vault</h3>
-                    <p class="text-muted mb-0">Audit, inspect, and trace uploaded project charters, data parameters, and structural resources.</p>
+                    <h3 class="fw-bold text-dark mb-1">System Resources</h3>
+                    <p class="text-muted mb-0">Access and monitor project documents, data, and resources.</p>
                 </div>
                 <!-- Search Bar -->
                 <form method="GET" class="d-flex">
@@ -152,9 +155,9 @@ $result = $conn->query($query);
                             <thead class="table-light">
                                 <tr>
                                     <th class="ps-4">Resource ID</th>
-                                    <th>Asset Document Title</th>
+                                    <th>Document Title</th>
                                     <th>Size Verification</th>
-                                    <th>Uploader Link Origin</th>
+                                    <th>Uploader</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>

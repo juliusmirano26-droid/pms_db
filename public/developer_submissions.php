@@ -19,6 +19,59 @@ if ($conn->connect_error) {
     die("Database Connection Error: " . $conn->connect_error);
 }
 
+// ==========================================
+// SECURE DOWNLOAD TUNNEL ENGINE (FORCED DOWNLOAD)
+// ==========================================
+if (isset($_GET['download_task_id'])) {
+    $download_id = intval($_GET['download_task_id']);
+    $stmt = $conn->prepare("SELECT file_path FROM assignments WHERE id = ?");
+    $stmt->bind_param("i", $download_id);
+    $stmt->execute();
+    $stmt->bind_result($db_path);
+    $stmt->fetch();
+    $stmt->close();
+
+    if (!empty($db_path)) {
+        // Subukan ang iba't ibang posibleng lokasyon ng folder sa server
+        $resolved_path = "";
+        $paths_to_check = [
+            $db_path,
+            "uploads/" . basename($db_path),
+            "../uploads/" . basename($db_path),
+            "public/uploads/" . basename($db_path)
+        ];
+
+        foreach ($paths_to_check as $p) {
+            if (!empty($p) && file_exists($p) && !is_dir($p)) {
+                $resolved_path = $p;
+                break;
+            }
+        }
+
+        if (!empty($resolved_path)) {
+            // Linisin ang output buffer para maiwasan ang file corruption
+            if (ob_get_level()) ob_end_clean();
+            
+            // I-set ang tamang headers para piliting i-download ng browser ang file
+            header('Content-Description: File Transfer');
+            header('Content-Type: application/octet-stream');
+            header('Content-Disposition: attachment; filename="' . basename($resolved_path) . '"');
+            header('Expires: 0');
+            header('Cache-Control: must-revalidate');
+            header('Pragma: public');
+            header('Content-Length: ' . filesize($resolved_path));
+            
+            readfile($resolved_path);
+            exit;
+        } else {
+            echo "<script>alert('Error: The physical file does not exist on the server paths.'); window.location.href='developer_submissions.php';</script>";
+            exit;
+        }
+    }
+    header("Location: developer_submissions.php");
+    exit;
+}
+
 $user_name = $_SESSION['user_name'] ?? 'Patrick Labayog';
 $user_role = $_SESSION['user_role'] ?? 'Project Manager';
 $current_page = basename($_SERVER['PHP_SELF']);
@@ -34,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status'])) {
         $update_stmt->execute();
         $update_stmt->close();
     }
-    header("Location: uploaded_submissions.php");
+    header("Location: developer_submissions.php");
     exit;
 }
 
@@ -86,9 +139,12 @@ $result = $conn->query($query);
             <hr class="mx-3 my-0" style="border-color: rgba(255,255,255,0.15);">
             <ul class="nav nav-pills flex-column mt-3">
                 <li><a href="manager_dashboard.php" class="nav-link"><i class="fa-solid fa-gauge-high"></i> Dashboard</a></li>
-                <li><a href="vault_documents.php" class="nav-link"><i class="fa-solid fa-file-shield"></i> Vault Documents</a></li>
-                <li><a href="assignments.php" class="nav-link"><i class="fa-solid fa-list-check"></i> Assignments</a></li>
-                <li><a href="uploaded_submissions.php" class="nav-link active-accent"><i class="fa-solid fa-arrow-up-right-from-square"></i> Developer Submissions</a></li>
+                <li><a href="work_personnel.php" class="nav-link"><i class="fa-solid fa-person-digging"></i> Work Personnel</a></li>
+                <li><a href="site_development.php" class="nav-link"><i class="fa-solid fa-trowel-bricks"></i> Site Development</a></li>
+                <li><a href="vault_documents.php" class="nav-link"><i class="fa-solid fa-folder-tree"></i> Vault Documents</a></li>
+                <li><a href="assignments.php" class="nav-link"><i class="fa-solid fa-sitemap"></i> Assignments</a></li>
+                <li><a href="developer_submissions.php" class="nav-link active-accent"><i class="fa-solid fa-file-import"></i> Developer Submissions</a></li>
+                <li><a href="manager_expenses.php" class="nav-link"><i class="fa-solid fa-receipt"></i> Project Expenses</a></li>
             </ul>
         </div>
         <div>
@@ -129,7 +185,10 @@ $result = $conn->query($query);
                                 <?php if ($result && $result->num_rows > 0): ?>
                                     <?php while ($row = $result->fetch_assoc()): 
                                         $file_path = $row['file_location'];
-                                        $is_file_valid = file_exists($file_path);
+                                        $status = $row['task_status'] ?? 'Pending Review';
+                                        
+                                        // Pagsuri kung may record o file path na nakatabi
+                                        $is_file_provided = !empty($file_path);
                                     ?>
                                         <tr>
                                             <td class="ps-4 font-monospace text-secondary">#TSK-<?= htmlspecialchars($row['task_id']); ?></td>
@@ -151,7 +210,6 @@ $result = $conn->query($query);
                                             </td>
                                             <td>
                                                 <?php
-                                                $status = $row['task_status'] ?? 'Pending Review';
                                                 $status_badge = 'bg-secondary text-white';
                                                 if ($status === 'Successful') $status_badge = 'bg-success text-white';
                                                 if ($status === 'Rejected') $status_badge = 'bg-danger text-white';
@@ -160,8 +218,8 @@ $result = $conn->query($query);
                                             </td>
                                             <td class="text-center">
                                                 <div class="action-container d-flex flex-column gap-2 py-2">
-                                                    <?php if ($is_file_valid): ?>
-                                                        <a href="<?= htmlspecialchars($file_path); ?>" download class="btn btn-sm btn-primary w-100 d-inline-flex align-items-center justify-content-center gap-1 py-1.5" style="font-size: 0.8rem; border-radius: 6px; font-weight: 500;">
+                                                    <?php if ($is_file_provided): ?>
+                                                        <a href="developer_submissions.php?download_task_id=<?= $row['task_id']; ?>" class="btn btn-sm btn-primary w-100 d-inline-flex align-items-center justify-content-center gap-1 py-1.5" style="font-size: 0.8rem; border-radius: 6px; font-weight: 500;">
                                                             <i class="fa-solid fa-cloud-arrow-down"></i> View File
                                                         </a>
                                                     <?php else: ?>
@@ -170,22 +228,26 @@ $result = $conn->query($query);
                                                         </button>
                                                     <?php endif; ?>
                                                     
-                                                    <div class="d-flex gap-2 w-100">
-                                                        <form method="POST" action="" class="w-50 m-0">
-                                                            <input type="hidden" name="task_id" value="<?= $row['task_id']; ?>">
-                                                            <input type="hidden" name="status" value="Successful">
-                                                            <button type="submit" name="update_status" class="btn btn-sm btn-success w-100 d-inline-flex align-items-center justify-content-center gap-1 py-1.5 text-white" style="font-size: 0.75rem; border-radius: 6px; font-weight: 500;" title="Mark Successful">
-                                                                <i class="fa-solid fa-check"></i> Approve
-                                                            </button>
-                                                        </form>
-                                                        <form method="POST" action="" class="w-50 m-0">
-                                                            <input type="hidden" name="task_id" value="<?= $row['task_id']; ?>">
-                                                            <input type="hidden" name="status" value="Rejected">
-                                                            <button type="submit" name="update_status" class="btn btn-sm btn-danger w-100 d-inline-flex align-items-center justify-content-center gap-1 py-1.5 text-white" style="font-size: 0.75rem; border-radius: 6px; font-weight: 500;" title="Reject Deliverable">
-                                                                <i class="fa-solid fa-xmark"></i> Reject
-                                                            </button>
-                                                        </form>
-                                                    </div>
+                                                    <?php if ($status === 'Pending Review' || empty($status)): ?>
+                                                        <div class="d-flex gap-2 w-100">
+                                                            <form method="POST" action="" class="w-50 m-0">
+                                                                <input type="hidden" name="task_id" value="<?= $row['task_id']; ?>">
+                                                                <input type="hidden" name="status" value="Successful">
+                                                                <button type="submit" name="update_status" class="btn btn-sm btn-success w-100 d-inline-flex align-items-center justify-content-center gap-1 py-1.5 text-white" style="font-size: 0.75rem; border-radius: 6px; font-weight: 500;" title="Mark Successful">
+                                                                    <i class="fa-solid fa-check"></i> Approve
+                                                                </button>
+                                                            </form>
+                                                            <form method="POST" action="" class="w-50 m-0">
+                                                                <input type="hidden" name="task_id" value="<?= $row['task_id']; ?>">
+                                                                <input type="hidden" name="status" value="Rejected">
+                                                                <button type="submit" name="update_status" class="btn btn-sm btn-danger w-100 d-inline-flex align-items-center justify-content-center gap-1 py-1.5 text-white" style="font-size: 0.75rem; border-radius: 6px; font-weight: 500;" title="Reject Deliverable">
+                                                                    <i class="fa-solid fa-xmark"></i> Reject
+                                                                </button>
+                                                            </form>
+                                                        </div>
+                                                    <?php else: ?>
+                                                        <span class="text-muted small italic"><i class="fa-solid fa-lock me-1"></i> Action Locked</span>
+                                                    <?php endif; ?>
                                                 </div>
                                             </td>
                                         </tr>
