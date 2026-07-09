@@ -173,7 +173,7 @@ $db_status = ($conn->ping()) ? "Operational" : "Degraded State";
                     </a>
                 </li>
                 <li>
-                    <a href="admin_budget.php" class="nav-link">
+                    <a href="developer_budget.php" class="nav-link">
                        <i class="fa-solid fa-code text-info"></i> Dev Budget
                      </a>
                 </li>

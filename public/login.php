@@ -4,11 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PMS - Login</title>
-    <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- FontAwesome for visual accents -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts for ultra-clean typography -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
@@ -186,14 +183,12 @@
 </head>
 <body>
 
-<!-- Dynamic Aesthetic Background Components -->
 <div class="mesh-gradient"></div>
 <div class="bg-grid"></div>
 
 <div class="container d-flex justify-content-center align-items-center vh-100">
     <div class="card pms-card">
         <div class="text-center mb-4">
-            <!-- Professional Hub Identity Header -->
             <div class="brand-icon-wrapper">
                 <i class="fa-solid fa-folder-tree fs-4 text-white"></i>
             </div>
@@ -201,7 +196,6 @@
             <p class="text-muted small mt-2 m-0" style="color: var(--text-muted) !important;">Enter credentials to open your dashboard workspace</p>
         </div>
         
-        <!-- ALERT CONTAINER: Activated dynamically via jQuery response loops -->
         <div id="alert-msg" class="alert d-none p-3 mb-3 small"></div>
 
         <form id="loginForm">
@@ -245,7 +239,12 @@ $(document).ready(function() {
                 if (response.success) {
                     alertBox.removeClass('alert-danger d-none').addClass('alert-success d-block').text(response.message);
                     setTimeout(function() {
-                        window.location.href = response.redirect;
+                        // CLIENT-SIDE OVERRIDE FOR ADMIN REDIRECTION
+                        var destination = response.redirect;
+                        if (destination === 'manage_users.php') {
+                            destination = 'admin_dashboard.php';
+                        }
+                        window.location.href = destination;
                     }, 1000);
                 } else {
                     alertBox.removeClass('alert-success d-none').addClass('alert-danger d-block').text(response.message);

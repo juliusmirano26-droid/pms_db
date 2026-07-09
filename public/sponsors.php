@@ -129,9 +129,9 @@ $sponsors_list = $conn->query("SELECT * FROM sponsors ORDER BY sponsor_name ASC"
             <ul class="nav nav-pills flex-column mt-3">
                 <li><a href="admin_dashboard.php" class="nav-link"><i class="fa-solid fa-chart-pie"></i> Dashboard</a></li>
                 <li><a href="manage_users.php" class="nav-link"><i class="fa-solid fa-users-gear"></i> Manage Users</a></li>
-                <li><a href="matrix_flow.php" class="nav-link"><i class="fa-solid fa-sitemap"></i> Matrix Flow</a></li>
+                <li><a href="projects.php" class="nav-link"><i class="fa-solid fa-sitemap"></i> Matrix Flow</a></li>
                 <li><a href="documents.php" class="nav-link"><i class="fa-solid fa-folder-tree"></i> Documents</a></li>
-                <li><a href="admin_budget.php" class="nav-link"><i class="fa-solid fa-code text-info"></i> Dev Budget</a></li>
+                <li><a href="developer_budget.php" class="nav-link"><i class="fa-solid fa-code text-info"></i> Dev Budget</a></li>
                 <li><a href="crew_budget_control.php" class="nav-link"><i class="fa-solid fa-helmet-safety text-warning"></i> Crew Budget</a></li>
                 <li><a href="sponsors.php" class="nav-link active-accent"><i class="fa-solid fa-hand-holding-dollar text-success"></i> Sponsors</a></li>
             </ul>
